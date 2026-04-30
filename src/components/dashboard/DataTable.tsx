@@ -1,4 +1,5 @@
-import { Trash2, FileText } from 'lucide-react'
+import { useState } from 'react'
+import { Trash2, FileText, CheckCircle } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -7,6 +8,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Checkbox } from '@/components/ui/checkbox'
+import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
@@ -30,6 +34,35 @@ interface DataTableProps {
 
 export function DataTable({ items, onInlineEdit, onDelete, onViewDetails }: DataTableProps) {
   const sortedItems = sortItemsByPriorityAndDate(items)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const { toast } = useToast()
+  const { role } = useAuth()
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(new Set(sortedItems.map((i) => i.id)))
+    } else {
+      setSelectedIds(new Set())
+    }
+  }
+
+  const handleSelectRow = (id: string, checked: boolean) => {
+    const newSet = new Set(selectedIds)
+    if (checked) newSet.add(id)
+    else newSet.delete(id)
+    setSelectedIds(newSet)
+  }
+
+  const handleBatchValidate = () => {
+    selectedIds.forEach((id) => {
+      onInlineEdit(id, 'status', 'Validated by Finance')
+    })
+    toast({
+      title: 'Validação em Lote',
+      description: `${selectedIds.size} registros foram validados com sucesso.`,
+    })
+    setSelectedIds(new Set())
+  }
 
   const getStatusBadge = (dueDate: string) => {
     const status = calculateItemStatus(dueDate)
@@ -75,10 +108,34 @@ export function DataTable({ items, onInlineEdit, onDelete, onViewDetails }: Data
 
   return (
     <Card className="glass-panel overflow-hidden animate-fade-in-up print:shadow-none print:border-none print:bg-transparent">
+      {selectedIds.size > 0 && role === 'Financeiro' && (
+        <div className="bg-[#002D5F]/5 border-b border-[#002D5F]/10 p-3 flex items-center justify-between animate-fade-in">
+          <span className="text-sm font-medium text-[#002D5F]">
+            {selectedIds.size}{' '}
+            {selectedIds.size === 1 ? 'registro selecionado' : 'registros selecionados'}
+          </span>
+          <Button
+            size="sm"
+            onClick={handleBatchValidate}
+            className="bg-[#002D5F] hover:bg-[#004A99] text-white"
+          >
+            <CheckCircle className="w-4 h-4 mr-2" />
+            Validar Selecionados
+          </Button>
+        </div>
+      )}
       <div className="overflow-x-auto print:overflow-visible">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent whitespace-nowrap">
+              {role === 'Financeiro' && (
+                <TableHead className="w-[40px] px-4">
+                  <Checkbox
+                    checked={selectedIds.size === sortedItems.length && sortedItems.length > 0}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
+              )}
               <TableHead className="w-[20%] min-w-[200px]">Registro</TableHead>
               <TableHead>Categoria</TableHead>
               <TableHead>Prioridade</TableHead>
@@ -91,13 +148,27 @@ export function DataTable({ items, onInlineEdit, onDelete, onViewDetails }: Data
           <TableBody>
             {sortedItems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell
+                  colSpan={role === 'Financeiro' ? 8 : 7}
+                  className="text-center py-8 text-muted-foreground"
+                >
                   Nenhum registro encontrado.
                 </TableCell>
               </TableRow>
             ) : (
               sortedItems.map((item) => (
-                <TableRow key={item.id} className="group transition-colors hover:bg-slate-50/50">
+                <TableRow
+                  key={item.id}
+                  className={`group transition-colors hover:bg-slate-50/50 ${selectedIds.has(item.id) ? 'bg-[#002D5F]/5' : ''}`}
+                >
+                  {role === 'Financeiro' && (
+                    <TableCell className="px-4">
+                      <Checkbox
+                        checked={selectedIds.has(item.id)}
+                        onCheckedChange={(c) => handleSelectRow(item.id, c as boolean)}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell className="font-medium p-1">
                     <div className="flex items-center gap-2">
                       <Input
