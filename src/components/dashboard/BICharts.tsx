@@ -38,9 +38,11 @@ export function BICharts({ items }: BIChartsProps) {
         item.status === 'Completed/Archived' ||
         item.status === 'Validated by Finance'
       if (item.unit === 'PRN Diagnósticos') {
-        isOk ? prnOk++ : prnPen++
+        if (isOk) prnOk++
+        else prnPen++
       } else {
-        isOk ? medOk++ : medPen++
+        if (isOk) medOk++
+        else medPen++
       }
     })
 
