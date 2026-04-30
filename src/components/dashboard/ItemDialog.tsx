@@ -26,16 +26,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import type { DashboardItem } from '@/types'
 
 const formSchema = z.object({
-  name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  unit: z.enum(['PRN Diagnósticos', 'Medimagem'], { required_error: 'Selecione uma unidade' }),
-  type: z.enum(['Colaborador', 'Equipamento', 'Vistoria'], { required_error: 'Selecione um tipo' }),
-  dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
-  code: z.string().optional(),
-  sector: z.string().optional(),
+  name: z.string().min(2, 'Obrigatório'),
+  unit: z.enum(['PRN Diagnósticos', 'Medimagem']),
+  category: z.enum(['Technical Asset', 'Human Capital', 'Legal Documentation']),
+  dueDate: z.string().min(1, 'Obrigatório'),
+  cost: z.coerce.number().optional(),
+  docType: z.string().optional(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -53,14 +52,13 @@ export function ItemDialog({ isOpen, onClose, onSave, initialData }: ItemDialogP
     defaultValues: {
       name: '',
       unit: 'PRN Diagnósticos',
-      type: 'Colaborador',
+      category: 'Legal Documentation',
       dueDate: '',
-      code: '',
-      sector: '',
+      cost: 0,
     },
   })
 
-  const watchType = form.watch('type')
+  const watchCat = form.watch('category')
 
   useEffect(() => {
     if (isOpen) {
@@ -68,74 +66,54 @@ export function ItemDialog({ isOpen, onClose, onSave, initialData }: ItemDialogP
         form.reset({
           name: initialData.name,
           unit: initialData.unit,
-          type: initialData.type,
+          category: initialData.category,
           dueDate: initialData.dueDate,
-          code: initialData.code || '',
-          sector: initialData.sector || '',
+          cost: initialData.cost || 0,
         })
       } else {
         form.reset({
           name: '',
           unit: 'PRN Diagnósticos',
-          type: 'Colaborador',
+          category: 'Legal Documentation',
           dueDate: '',
-          code: '',
-          sector: '',
+          cost: 0,
         })
       }
     }
   }, [isOpen, initialData, form])
 
   const onSubmit = (values: FormValues) => {
-    // Clean up conditional fields based on selection type
-    if (values.type === 'Colaborador') values.code = undefined
-    if (values.type === 'Equipamento') values.sector = undefined
-    onSave(values)
+    onSave(values as Partial<DashboardItem>)
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[425px] glass-panel border-white/60">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">
-            {initialData ? 'Editar Registro' : 'Novo Registro'}
+          <DialogTitle className="text-xl font-bold text-[#004A99]">
+            {initialData ? 'Editar' : 'Novo Registro IA'}
           </DialogTitle>
         </DialogHeader>
-
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="type"
+              name="category"
               render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Tipo de Registro</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      className="flex space-x-4"
-                    >
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="Colaborador" />
-                        </FormControl>
-                        <FormLabel className="font-normal cursor-pointer">Colaborador</FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="Equipamento" />
-                        </FormControl>
-                        <FormLabel className="font-normal cursor-pointer">Equipamento</FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="Vistoria" />
-                        </FormControl>
-                        <FormLabel className="font-normal cursor-pointer">Vistoria</FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
+                <FormItem>
+                  <FormLabel>Categoria da Entidade (Ontologia)</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="Legal Documentation">Documento Legal</SelectItem>
+                      <SelectItem value="Technical Asset">Ativo Técnico</SelectItem>
+                      <SelectItem value="Human Capital">Capital Humano</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -146,17 +124,10 @@ export function ItemDialog({ isOpen, onClose, onSave, initialData }: ItemDialogP
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    {watchType === 'Equipamento'
-                      ? 'Nome do Equipamento'
-                      : watchType === 'Vistoria'
-                        ? 'Descrição da Vistoria'
-                        : 'Nome do Colaborador'}
-                  </FormLabel>
+                  <FormLabel>Nome / Identificador</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: João da Silva / Tomógrafo" {...field} />
+                    <Input {...field} />
                   </FormControl>
-                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -171,70 +142,76 @@ export function ItemDialog({ isOpen, onClose, onSave, initialData }: ItemDialogP
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
+                          <SelectValue />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="PRN Diagnósticos">PRN Diagnósticos</SelectItem>
+                        <SelectItem value="PRN Diagnósticos">PRN</SelectItem>
                         <SelectItem value="Medimagem">Medimagem</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormMessage />
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="dueDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Vencimento</FormLabel>
+                    <FormLabel>Vencimento / Prazo</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
-                    <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
 
-            {watchType === 'Equipamento' || watchType === 'Vistoria' ? (
+            {watchCat === 'Legal Documentation' && (
               <FormField
                 control={form.control}
-                name="code"
+                name="docType"
                 render={({ field }) => (
-                  <FormItem className="animate-fade-in">
-                    <FormLabel>Código / Patrimônio</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ex: PRN-001" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            ) : (
-              <FormField
-                control={form.control}
-                name="sector"
-                render={({ field }) => (
-                  <FormItem className="animate-fade-in">
-                    <FormLabel>Setor</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ex: Recepção, Limpeza..." {...field} />
-                    </FormControl>
-                    <FormMessage />
+                  <FormItem>
+                    <FormLabel>Tipo de Documento</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Alvará">Alvará</SelectItem>
+                        <SelectItem value="Sanitary License">Licença Sanitária</SelectItem>
+                        <SelectItem value="CNES">CNES</SelectItem>
+                        <SelectItem value="Rent Contract">Contrato de Aluguel</SelectItem>
+                        <SelectItem value="Internal Document">Documento Interno</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </FormItem>
                 )}
               />
             )}
 
+            <FormField
+              control={form.control}
+              name="cost"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Custo Estimado (R$)</FormLabel>
+                  <FormControl>
+                    <Input type="number" {...field} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
             <DialogFooter className="pt-4">
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancelar
               </Button>
-              <Button type="submit" className="bg-[#004A99] hover:bg-[#003d7a] text-white">
-                Salvar
+              <Button type="submit" className="bg-[#004A99] hover:bg-[#003d7a]">
+                Inserir no Brain
               </Button>
             </DialogFooter>
           </form>

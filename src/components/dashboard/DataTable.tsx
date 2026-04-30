@@ -1,4 +1,4 @@
-import { Trash2, AlertCircle, FileText } from 'lucide-react'
+import { Trash2, FileText } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -11,81 +11,87 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import type { DashboardItem } from '@/types'
-import { calculateItemStatus, sortItemsByDate } from '@/lib/dashboard-utils'
+import { calculateItemStatus, sortItemsByPriorityAndDate } from '@/lib/dashboard-utils'
 
 interface DataTableProps {
   items: DashboardItem[]
-  onInlineEdit: (id: string, field: keyof DashboardItem, value: string) => void
+  onInlineEdit: (id: string, field: keyof DashboardItem, value: any) => void
   onDelete: (id: string) => void
   onViewDetails?: (item: DashboardItem) => void
 }
 
 export function DataTable({ items, onInlineEdit, onDelete, onViewDetails }: DataTableProps) {
-  const sortedItems = sortItemsByDate(items)
+  const sortedItems = sortItemsByPriorityAndDate(items)
 
   const getStatusBadge = (dueDate: string) => {
     const status = calculateItemStatus(dueDate)
-    switch (status) {
-      case 'critical':
-        return (
-          <Badge className="bg-red-500 hover:bg-red-600 animate-pulse-soft border-transparent text-white">
-            Crítico 🔴
-          </Badge>
-        )
-      case 'warning':
-        return (
-          <Badge className="bg-amber-500 hover:bg-amber-600 border-transparent text-white">
-            Atenção 🟠
-          </Badge>
-        )
-      case 'good':
-        return (
-          <Badge className="bg-emerald-500 hover:bg-emerald-600 border-transparent text-white">
-            Regular 🟢
-          </Badge>
-        )
-    }
-  }
-
-  const getUnitBadge = (unit: string) => {
-    if (unit === 'PRN Diagnósticos') {
+    if (status === 'critical')
       return (
-        <Badge variant="outline" className="border-blue-200 text-blue-700 bg-blue-50">
-          PRN Diagnósticos
+        <Badge className="bg-red-500 hover:bg-red-600 animate-pulse-soft border-transparent text-white">
+          Crítico 🔴
         </Badge>
       )
+    if (status === 'warning')
+      return (
+        <Badge className="bg-amber-500 hover:bg-amber-600 border-transparent text-white">
+          Atenção 🟠
+        </Badge>
+      )
+    return (
+      <Badge className="bg-emerald-500 hover:bg-emerald-600 border-transparent text-white">
+        Regular 🟢
+      </Badge>
+    )
+  }
+
+  const getWeightBadge = (weight: number) => {
+    if (weight === 3)
+      return <Badge className="bg-red-50 text-red-700 border-red-200">Alta (3)</Badge>
+    if (weight === 2)
+      return <Badge className="bg-amber-50 text-amber-700 border-amber-200">Média (2)</Badge>
+    return <Badge className="bg-blue-50 text-blue-700 border-blue-200">Baixa (1)</Badge>
+  }
+
+  const getCategoryBadge = (category: string) => {
+    const map: Record<string, string> = {
+      'Technical Asset': 'Ativo Técnico',
+      'Human Capital': 'Capital Humano',
+      'Legal Documentation': 'Doc. Legal',
     }
     return (
-      <Badge variant="outline" className="border-purple-200 text-purple-700 bg-purple-50">
-        Medimagem
+      <Badge variant="secondary" className="font-normal bg-slate-100 whitespace-nowrap">
+        {map[category] || category}
       </Badge>
     )
   }
 
   return (
-    <Card
-      className="glass-panel overflow-hidden animate-fade-in-up print:shadow-none print:border-none print:bg-transparent"
-      style={{ animationDelay: '300ms' }}
-    >
+    <Card className="glass-panel overflow-hidden animate-fade-in-up print:shadow-none print:border-none print:bg-transparent">
       <div className="overflow-x-auto print:overflow-visible">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent whitespace-nowrap">
-              <TableHead className="w-[25%] min-w-[200px]">Nome / Equipamento</TableHead>
-              <TableHead>Unidade</TableHead>
-              <TableHead>Tipo</TableHead>
+              <TableHead className="w-[20%] min-w-[200px]">Registro</TableHead>
+              <TableHead>Categoria</TableHead>
+              <TableHead>Prioridade</TableHead>
+              <TableHead>Fluxo (Status)</TableHead>
               <TableHead>Vencimento</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Finanças</TableHead>
-              <TableHead>Auditoria</TableHead>
+              <TableHead>Alerta</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {sortedItems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   Nenhum registro encontrado.
                 </TableCell>
               </TableRow>
@@ -94,85 +100,52 @@ export function DataTable({ items, onInlineEdit, onDelete, onViewDetails }: Data
                 <TableRow key={item.id} className="group transition-colors hover:bg-slate-50/50">
                   <TableCell className="font-medium p-1">
                     <div className="flex items-center gap-2">
-                      {item.validationStatus === 'Pending' && (
-                        <div title="Pendente de Validação" className="text-amber-500 animate-pulse">
-                          <AlertCircle className="h-4 w-4" />
-                        </div>
-                      )}
                       <Input
                         value={item.name}
                         onChange={(e) => onInlineEdit(item.id, 'name', e.target.value)}
-                        className="border-transparent bg-transparent hover:bg-white hover:border-slate-200 focus:bg-white focus:border-primary h-9 shadow-none focus-visible:ring-1 min-w-[150px]"
+                        className="border-transparent bg-transparent hover:bg-white hover:border-slate-200 focus:bg-white h-9 shadow-none focus-visible:ring-1 min-w-[150px]"
                       />
                     </div>
+                    <div className="px-3 text-[11px] text-slate-500 font-normal">{item.unit}</div>
                   </TableCell>
-                  <TableCell>{getUnitBadge(item.unit)}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    <Badge variant="secondary" className="font-normal bg-slate-100">
-                      {item.type}
-                    </Badge>
+                  <TableCell>{getCategoryBadge(item.category)}</TableCell>
+                  <TableCell>{getWeightBadge(item.weight)}</TableCell>
+                  <TableCell>
+                    <Select
+                      value={item.status}
+                      onValueChange={(val) => onInlineEdit(item.id, 'status', val)}
+                    >
+                      <SelectTrigger className="h-8 text-[11px] font-medium w-[150px] bg-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Extracted (IA)">Extraído (IA)</SelectItem>
+                        <SelectItem value="Pending Conference">Pend. Conferência</SelectItem>
+                        <SelectItem value="Validated by Finance">Validado Financeiro</SelectItem>
+                        <SelectItem value="Completed/Archived">Arquivado</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </TableCell>
                   <TableCell className="p-1">
                     <Input
                       type="date"
                       value={item.dueDate}
                       onChange={(e) => onInlineEdit(item.id, 'dueDate', e.target.value)}
-                      className="border-transparent bg-transparent hover:bg-white hover:border-slate-200 focus:bg-white focus:border-primary h-9 w-auto min-w-[140px] shadow-none focus-visible:ring-1"
+                      className="border-transparent bg-transparent hover:bg-white hover:border-slate-200 focus:bg-white h-9 w-auto min-w-[130px] shadow-none focus-visible:ring-1"
                     />
                   </TableCell>
                   <TableCell>{getStatusBadge(item.dueDate)}</TableCell>
-                  <TableCell>
-                    <Button
-                      variant={item.financeStatus === 'Validated' ? 'default' : 'outline'}
-                      size="sm"
-                      className={
-                        item.financeStatus === 'Validated'
-                          ? 'bg-[#004A99] hover:bg-[#003d7a] text-white shadow-sm'
-                          : 'border-slate-300 text-slate-600 hover:bg-slate-100'
-                      }
-                      onClick={() =>
-                        onInlineEdit(
-                          item.id,
-                          'financeStatus',
-                          item.financeStatus === 'Validated' ? 'Pending' : 'Validated',
-                        )
-                      }
-                    >
-                      {item.financeStatus === 'Validated' ? 'Validado' : 'Pendente'}
-                    </Button>
-                  </TableCell>
-                  <TableCell className="text-[11px] leading-tight text-slate-500 whitespace-nowrap min-w-[120px]">
-                    {item.lastEditedBy ? (
-                      <div className="flex flex-col">
-                        <span className="font-medium text-slate-700">{item.lastEditedBy}</span>
-                        <span>{new Date(item.lastEditedAt!).toLocaleString('pt-BR')}</span>
-                      </div>
-                    ) : (
-                      <span className="italic text-slate-400">Sem edições</span>
-                    )}
-                  </TableCell>
                   <TableCell className="text-right p-2">
                     <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity print:opacity-100">
-                      {item.validationStatus === 'Pending' && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onInlineEdit(item.id, 'validationStatus', 'Validated')}
-                          className="h-8 border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 print:hidden"
-                        >
-                          Validar
-                        </Button>
-                      )}
-                      {item.type === 'Equipamento' && onViewDetails && (
+                      {onViewDetails && (
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => onViewDetails(item)}
                           className="h-8 print:hidden"
-                          title="Ficha de Ativo"
+                          title="Abrir Ficha e Notas"
                         >
-                          <FileText className="h-4 w-4 mr-1" />
-                          Detalhes
+                          <FileText className="h-4 w-4 mr-1" /> Ficha
                         </Button>
                       )}
                       <Button
