@@ -28,7 +28,7 @@ export function HealthCards({ items }: HealthCardsProps) {
             <AlertCircle className="h-8 w-8" />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-500">Crítico (&lt; 7 dias)</p>
+            <p className="text-sm font-medium text-slate-500">Crítico (≤ 7 dias)</p>
             <h3 className="text-3xl font-bold text-slate-800">{stats.critical}</h3>
           </div>
         </CardContent>
@@ -58,7 +58,7 @@ export function HealthCards({ items }: HealthCardsProps) {
             <CheckCircle2 className="h-8 w-8" />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-500">Em dia (&gt; 30 dias)</p>
+            <p className="text-sm font-medium text-slate-500">Regular (&gt; 30 dias)</p>
             <h3 className="text-3xl font-bold text-slate-800">{stats.good}</h3>
           </div>
         </CardContent>

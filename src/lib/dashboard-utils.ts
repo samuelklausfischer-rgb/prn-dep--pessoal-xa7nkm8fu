@@ -1,10 +1,19 @@
 import { differenceInDays, parseISO } from 'date-fns'
-import type { ItemStatus } from '@/types'
+import type { ItemStatus, DashboardItem } from '@/types'
 
 export function calculateItemStatus(dueDate: string): ItemStatus {
-  const days = differenceInDays(parseISO(dueDate), new Date())
+  if (!dueDate) return 'good'
 
-  if (days < 7) {
+  // Normalize dates to midnight to avoid time zone artifacts on current day comparison
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const targetDate = parseISO(dueDate)
+  targetDate.setHours(0, 0, 0, 0)
+
+  const days = differenceInDays(targetDate, today)
+
+  if (days <= 7) {
     return 'critical'
   }
   if (days <= 30) {
@@ -13,6 +22,10 @@ export function calculateItemStatus(dueDate: string): ItemStatus {
   return 'good'
 }
 
-export function sortItemsByDate(items: any[]) {
-  return [...items].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+export function sortItemsByDate(items: DashboardItem[]) {
+  return [...items].sort((a, b) => {
+    const da = a.dueDate ? new Date(a.dueDate).getTime() : Infinity
+    const db = b.dueDate ? new Date(b.dueDate).getTime() : Infinity
+    return da - db
+  })
 }

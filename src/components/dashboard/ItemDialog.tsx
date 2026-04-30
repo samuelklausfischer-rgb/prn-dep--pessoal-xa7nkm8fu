@@ -26,13 +26,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import type { DashboardItem } from '@/types'
 
 const formSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  unit: z.enum(['PRN', 'Medimagem'], { required_error: 'Selecione uma unidade' }),
-  category: z.string().min(2, 'Categoria é obrigatória'),
+  unit: z.enum(['PRN Diagnósticos', 'Medimagem'], { required_error: 'Selecione uma unidade' }),
+  type: z.enum(['Colaborador', 'Equipamento'], { required_error: 'Selecione um tipo' }),
   dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
+  code: z.string().optional(),
+  sector: z.string().optional(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -49,11 +52,15 @@ export function ItemDialog({ isOpen, onClose, onSave, initialData }: ItemDialogP
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
-      unit: undefined,
-      category: '',
+      unit: 'PRN Diagnósticos',
+      type: 'Colaborador',
       dueDate: '',
+      code: '',
+      sector: '',
     },
   })
+
+  const watchType = form.watch('type')
 
   useEffect(() => {
     if (isOpen) {
@@ -61,21 +68,28 @@ export function ItemDialog({ isOpen, onClose, onSave, initialData }: ItemDialogP
         form.reset({
           name: initialData.name,
           unit: initialData.unit,
-          category: initialData.category,
+          type: initialData.type,
           dueDate: initialData.dueDate,
+          code: initialData.code || '',
+          sector: initialData.sector || '',
         })
       } else {
         form.reset({
           name: '',
-          unit: undefined,
-          category: '',
+          unit: 'PRN Diagnósticos',
+          type: 'Colaborador',
           dueDate: '',
+          code: '',
+          sector: '',
         })
       }
     }
   }, [isOpen, initialData, form])
 
   const onSubmit = (values: FormValues) => {
+    // Clean up conditional fields based on selection type
+    if (values.type === 'Colaborador') values.code = undefined
+    if (values.type === 'Equipamento') values.sector = undefined
     onSave(values)
   }
 
@@ -92,12 +106,45 @@ export function ItemDialog({ isOpen, onClose, onSave, initialData }: ItemDialogP
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
             <FormField
               control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Tipo de Registro</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      className="flex space-x-4"
+                    >
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="Colaborador" />
+                        </FormControl>
+                        <FormLabel className="font-normal cursor-pointer">Colaborador</FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="Equipamento" />
+                        </FormControl>
+                        <FormLabel className="font-normal cursor-pointer">Equipamento</FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome/Equipamento</FormLabel>
+                  <FormLabel>
+                    {watchType === 'Equipamento' ? 'Nome do Equipamento' : 'Nome do Colaborador'}
+                  </FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Licença Sanitária" {...field} />
+                    <Input placeholder="Ex: João da Silva / Tomógrafo" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -118,7 +165,7 @@ export function ItemDialog({ isOpen, onClose, onSave, initialData }: ItemDialogP
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="PRN">PRN</SelectItem>
+                        <SelectItem value="PRN Diagnósticos">PRN Diagnósticos</SelectItem>
                         <SelectItem value="Medimagem">Medimagem</SelectItem>
                       </SelectContent>
                     </Select>
@@ -142,19 +189,35 @@ export function ItemDialog({ isOpen, onClose, onSave, initialData }: ItemDialogP
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Categoria</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Ex: Documento, Manutenção..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {watchType === 'Equipamento' ? (
+              <FormField
+                control={form.control}
+                name="code"
+                render={({ field }) => (
+                  <FormItem className="animate-fade-in">
+                    <FormLabel>Código / Patrimônio</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: PRN-001" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : (
+              <FormField
+                control={form.control}
+                name="sector"
+                render={({ field }) => (
+                  <FormItem className="animate-fade-in">
+                    <FormLabel>Setor</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Recepção, Limpeza..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <DialogFooter className="pt-4">
               <Button type="button" variant="outline" onClick={onClose}>

@@ -1,6 +1,4 @@
-import { Edit2 } from 'lucide-react'
-import { format, parseISO } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
+import { Trash2 } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -12,15 +10,17 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import type { DashboardItem } from '@/types'
 import { calculateItemStatus, sortItemsByDate } from '@/lib/dashboard-utils'
 
 interface DataTableProps {
   items: DashboardItem[]
-  onEdit: (item: DashboardItem) => void
+  onInlineEdit: (id: string, field: keyof DashboardItem, value: string) => void
+  onDelete: (id: string) => void
 }
 
-export function DataTable({ items, onEdit }: DataTableProps) {
+export function DataTable({ items, onInlineEdit, onDelete }: DataTableProps) {
   const sortedItems = sortItemsByDate(items)
 
   const getStatusBadge = (dueDate: string) => {
@@ -29,29 +29,29 @@ export function DataTable({ items, onEdit }: DataTableProps) {
       case 'critical':
         return (
           <Badge className="bg-red-500 hover:bg-red-600 animate-pulse-soft border-transparent text-white">
-            Crítico
+            Crítico 🔴
           </Badge>
         )
       case 'warning':
         return (
           <Badge className="bg-amber-500 hover:bg-amber-600 border-transparent text-white">
-            Atenção
+            Atenção 🟠
           </Badge>
         )
       case 'good':
         return (
           <Badge className="bg-emerald-500 hover:bg-emerald-600 border-transparent text-white">
-            Em dia
+            Regular 🟢
           </Badge>
         )
     }
   }
 
   const getUnitBadge = (unit: string) => {
-    if (unit === 'PRN') {
+    if (unit === 'PRN Diagnósticos') {
       return (
         <Badge variant="outline" className="border-blue-200 text-blue-700 bg-blue-50">
-          PRN
+          PRN Diagnósticos
         </Badge>
       )
     }
@@ -71,9 +71,9 @@ export function DataTable({ items, onEdit }: DataTableProps) {
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <TableHead className="w-[30%]">Nome/Equipamento</TableHead>
+              <TableHead className="w-[30%]">Nome / Equipamento</TableHead>
               <TableHead>Unidade</TableHead>
-              <TableHead>Categoria</TableHead>
+              <TableHead>Tipo</TableHead>
               <TableHead>Vencimento</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Ações</TableHead>
@@ -89,21 +89,37 @@ export function DataTable({ items, onEdit }: DataTableProps) {
             ) : (
               sortedItems.map((item) => (
                 <TableRow key={item.id} className="group transition-colors hover:bg-slate-50/50">
-                  <TableCell className="font-medium">{item.name}</TableCell>
+                  <TableCell className="font-medium p-1">
+                    <Input
+                      value={item.name}
+                      onChange={(e) => onInlineEdit(item.id, 'name', e.target.value)}
+                      className="border-transparent bg-transparent hover:bg-white hover:border-slate-200 focus:bg-white focus:border-primary h-9 shadow-none focus-visible:ring-1"
+                    />
+                  </TableCell>
                   <TableCell>{getUnitBadge(item.unit)}</TableCell>
-                  <TableCell className="text-muted-foreground">{item.category}</TableCell>
-                  <TableCell>
-                    {format(parseISO(item.dueDate), 'dd/MM/yyyy', { locale: ptBR })}
+                  <TableCell className="text-muted-foreground">
+                    <Badge variant="secondary" className="font-normal bg-slate-100">
+                      {item.type}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="p-1">
+                    <Input
+                      type="date"
+                      value={item.dueDate}
+                      onChange={(e) => onInlineEdit(item.id, 'dueDate', e.target.value)}
+                      className="border-transparent bg-transparent hover:bg-white hover:border-slate-200 focus:bg-white focus:border-primary h-9 w-auto min-w-[140px] shadow-none focus-visible:ring-1"
+                    />
                   </TableCell>
                   <TableCell>{getStatusBadge(item.dueDate)}</TableCell>
                   <TableCell className="text-right">
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => onEdit(item)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => onDelete(item.id)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-600 hover:bg-red-50"
+                      title="Remover"
                     >
-                      <Edit2 className="h-4 w-4 text-slate-500" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>
                 </TableRow>
