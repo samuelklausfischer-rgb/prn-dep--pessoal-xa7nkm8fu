@@ -1,4 +1,4 @@
-import { Trash2 } from 'lucide-react'
+import { Trash2, AlertCircle, FileText } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -18,9 +18,10 @@ interface DataTableProps {
   items: DashboardItem[]
   onInlineEdit: (id: string, field: keyof DashboardItem, value: string) => void
   onDelete: (id: string) => void
+  onViewDetails?: (item: DashboardItem) => void
 }
 
-export function DataTable({ items, onInlineEdit, onDelete }: DataTableProps) {
+export function DataTable({ items, onInlineEdit, onDelete, onViewDetails }: DataTableProps) {
   const sortedItems = sortItemsByDate(items)
 
   const getStatusBadge = (dueDate: string) => {
@@ -64,10 +65,10 @@ export function DataTable({ items, onInlineEdit, onDelete }: DataTableProps) {
 
   return (
     <Card
-      className="glass-panel overflow-hidden animate-fade-in-up"
+      className="glass-panel overflow-hidden animate-fade-in-up print:shadow-none print:border-none print:bg-transparent"
       style={{ animationDelay: '300ms' }}
     >
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto print:overflow-visible">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent whitespace-nowrap">
@@ -92,11 +93,18 @@ export function DataTable({ items, onInlineEdit, onDelete }: DataTableProps) {
               sortedItems.map((item) => (
                 <TableRow key={item.id} className="group transition-colors hover:bg-slate-50/50">
                   <TableCell className="font-medium p-1">
-                    <Input
-                      value={item.name}
-                      onChange={(e) => onInlineEdit(item.id, 'name', e.target.value)}
-                      className="border-transparent bg-transparent hover:bg-white hover:border-slate-200 focus:bg-white focus:border-primary h-9 shadow-none focus-visible:ring-1"
-                    />
+                    <div className="flex items-center gap-2">
+                      {item.validationStatus === 'Pending' && (
+                        <div title="Pendente de Validação" className="text-amber-500 animate-pulse">
+                          <AlertCircle className="h-4 w-4" />
+                        </div>
+                      )}
+                      <Input
+                        value={item.name}
+                        onChange={(e) => onInlineEdit(item.id, 'name', e.target.value)}
+                        className="border-transparent bg-transparent hover:bg-white hover:border-slate-200 focus:bg-white focus:border-primary h-9 shadow-none focus-visible:ring-1 min-w-[150px]"
+                      />
+                    </div>
                   </TableCell>
                   <TableCell>{getUnitBadge(item.unit)}</TableCell>
                   <TableCell className="text-muted-foreground">
@@ -143,16 +151,40 @@ export function DataTable({ items, onInlineEdit, onDelete }: DataTableProps) {
                       <span className="italic text-slate-400">Sem edições</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onDelete(item.id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-600 hover:bg-red-50"
-                      title="Remover"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  <TableCell className="text-right p-2">
+                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity print:opacity-100">
+                      {item.validationStatus === 'Pending' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onInlineEdit(item.id, 'validationStatus', 'Validated')}
+                          className="h-8 border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 print:hidden"
+                        >
+                          Validar
+                        </Button>
+                      )}
+                      {item.type === 'Equipamento' && onViewDetails && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onViewDetails(item)}
+                          className="h-8 print:hidden"
+                          title="Ficha de Ativo"
+                        >
+                          <FileText className="h-4 w-4 mr-1" />
+                          Detalhes
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onDelete(item.id)}
+                        className="h-8 w-8 hover:text-red-600 hover:bg-red-50 print:hidden"
+                        title="Remover"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
