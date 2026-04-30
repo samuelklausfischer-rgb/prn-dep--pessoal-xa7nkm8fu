@@ -32,7 +32,7 @@ import type { DashboardItem } from '@/types'
 const formSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   unit: z.enum(['PRN Diagnósticos', 'Medimagem'], { required_error: 'Selecione uma unidade' }),
-  type: z.enum(['Colaborador', 'Equipamento'], { required_error: 'Selecione um tipo' }),
+  type: z.enum(['Colaborador', 'Equipamento', 'Vistoria'], { required_error: 'Selecione um tipo' }),
   dueDate: z.string().min(1, 'Data de vencimento é obrigatória'),
   code: z.string().optional(),
   sector: z.string().optional(),
@@ -128,6 +128,12 @@ export function ItemDialog({ isOpen, onClose, onSave, initialData }: ItemDialogP
                         </FormControl>
                         <FormLabel className="font-normal cursor-pointer">Equipamento</FormLabel>
                       </FormItem>
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <RadioGroupItem value="Vistoria" />
+                        </FormControl>
+                        <FormLabel className="font-normal cursor-pointer">Vistoria</FormLabel>
+                      </FormItem>
                     </RadioGroup>
                   </FormControl>
                   <FormMessage />
@@ -141,7 +147,11 @@ export function ItemDialog({ isOpen, onClose, onSave, initialData }: ItemDialogP
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    {watchType === 'Equipamento' ? 'Nome do Equipamento' : 'Nome do Colaborador'}
+                    {watchType === 'Equipamento'
+                      ? 'Nome do Equipamento'
+                      : watchType === 'Vistoria'
+                        ? 'Descrição da Vistoria'
+                        : 'Nome do Colaborador'}
                   </FormLabel>
                   <FormControl>
                     <Input placeholder="Ex: João da Silva / Tomógrafo" {...field} />
@@ -189,7 +199,7 @@ export function ItemDialog({ isOpen, onClose, onSave, initialData }: ItemDialogP
               />
             </div>
 
-            {watchType === 'Equipamento' ? (
+            {watchType === 'Equipamento' || watchType === 'Vistoria' ? (
               <FormField
                 control={form.control}
                 name="code"
@@ -223,7 +233,7 @@ export function ItemDialog({ isOpen, onClose, onSave, initialData }: ItemDialogP
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancelar
               </Button>
-              <Button type="submit" className="bg-primary hover:bg-primary/90">
+              <Button type="submit" className="bg-[#004A99] hover:bg-[#003d7a] text-white">
                 Salvar
               </Button>
             </DialogFooter>

@@ -70,12 +70,14 @@ export function DataTable({ items, onInlineEdit, onDelete }: DataTableProps) {
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="w-[30%]">Nome / Equipamento</TableHead>
+            <TableRow className="hover:bg-transparent whitespace-nowrap">
+              <TableHead className="w-[25%] min-w-[200px]">Nome / Equipamento</TableHead>
               <TableHead>Unidade</TableHead>
               <TableHead>Tipo</TableHead>
               <TableHead>Vencimento</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Finanças</TableHead>
+              <TableHead>Auditoria</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -111,6 +113,36 @@ export function DataTable({ items, onInlineEdit, onDelete }: DataTableProps) {
                     />
                   </TableCell>
                   <TableCell>{getStatusBadge(item.dueDate)}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant={item.financeStatus === 'Validated' ? 'default' : 'outline'}
+                      size="sm"
+                      className={
+                        item.financeStatus === 'Validated'
+                          ? 'bg-[#004A99] hover:bg-[#003d7a] text-white shadow-sm'
+                          : 'border-slate-300 text-slate-600 hover:bg-slate-100'
+                      }
+                      onClick={() =>
+                        onInlineEdit(
+                          item.id,
+                          'financeStatus',
+                          item.financeStatus === 'Validated' ? 'Pending' : 'Validated',
+                        )
+                      }
+                    >
+                      {item.financeStatus === 'Validated' ? 'Validado' : 'Pendente'}
+                    </Button>
+                  </TableCell>
+                  <TableCell className="text-[11px] leading-tight text-slate-500 whitespace-nowrap min-w-[120px]">
+                    {item.lastEditedBy ? (
+                      <div className="flex flex-col">
+                        <span className="font-medium text-slate-700">{item.lastEditedBy}</span>
+                        <span>{new Date(item.lastEditedAt!).toLocaleString('pt-BR')}</span>
+                      </div>
+                    ) : (
+                      <span className="italic text-slate-400">Sem edições</span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">
                     <Button
                       variant="ghost"

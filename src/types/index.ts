@@ -1,6 +1,6 @@
 export type ItemStatus = 'critical' | 'warning' | 'good'
 export type UnitType = 'PRN Diagnósticos' | 'Medimagem'
-export type RecordType = 'Colaborador' | 'Equipamento'
+export type RecordType = 'Colaborador' | 'Equipamento' | 'Vistoria'
 
 export interface DashboardItem {
   id: string
@@ -10,4 +10,7 @@ export interface DashboardItem {
   dueDate: string // YYYY-MM-DD format
   code?: string
   sector?: string
+  financeStatus?: 'Validated' | 'Pending'
+  lastEditedBy?: string
+  lastEditedAt?: string
 }
