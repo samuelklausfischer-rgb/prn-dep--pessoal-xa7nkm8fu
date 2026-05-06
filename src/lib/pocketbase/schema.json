@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-06T14:04:54.412Z",
+  "generatedAt": "2026-05-06T14:11:11.111Z",
   "collections": [
     {
       "name": "users",
@@ -427,6 +427,82 @@
         }
       ],
       "indexes": []
+    },
+    {
+      "name": "system_events",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "type",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "entity_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "entity_type",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "severity",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["info", "warning", "critical"]
+        },
+        {
+          "name": "unit",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "units"
+        },
+        {
+          "name": "user",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_system_events_created ON system_events (created DESC)",
+        "CREATE INDEX idx_system_events_entity ON system_events (entity_type, entity_id)"
+      ]
     }
   ]
 }
