@@ -8,6 +8,7 @@ import Timeline from './pages/dashboard/Timeline'
 import Employees from './pages/dashboard/Employees'
 import Exams from './pages/dashboard/Exams'
 import Equipment from './pages/dashboard/Equipment'
+import Infrastructure from './pages/dashboard/Infrastructure'
 import Inspections from './pages/dashboard/Inspections'
 import Documents from './pages/dashboard/Documents'
 import ImportData from './pages/dashboard/ImportData'
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/dashboard/employees" element={<Employees />} />
             <Route path="/dashboard/exams" element={<Exams />} />
             <Route path="/dashboard/equipment" element={<Equipment />} />
+            <Route path="/dashboard/infrastructure" element={<Infrastructure />} />
             <Route path="/dashboard/inspections" element={<Inspections />} />
             <Route path="/dashboard/documents" element={<Documents />} />
             <Route path="/dashboard/import" element={<ImportData />} />

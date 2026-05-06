@@ -6,6 +6,7 @@ import {
   Users,
   Activity,
   Monitor,
+  Building,
   Wrench,
   FileText,
   Upload,
@@ -47,6 +48,7 @@ const navData = [
   {
     title: 'Infraestrutura',
     items: [
+      { title: 'Infraestrutura Física', url: '/dashboard/infrastructure', icon: Building },
       { title: 'Equipamentos & Máquinas', url: '/dashboard/equipment', icon: Monitor },
       { title: 'Vistorias Técnicas', url: '/dashboard/inspections', icon: Wrench },
       { title: 'Alvarás e Documentos', url: '/dashboard/documents', icon: FileText },

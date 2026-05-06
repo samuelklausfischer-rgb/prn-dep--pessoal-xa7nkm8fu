@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react'
 import {
-  Monitor,
+  Building,
   Plus,
   Search,
   MoreVertical,
-  Activity,
-  AlertCircle,
+  AlertTriangle,
   CheckCircle2,
   Wrench,
 } from 'lucide-react'
@@ -38,17 +37,17 @@ import { AssetDrawer } from '@/components/assets/AssetDrawer'
 import { getAssets, getUnits, deleteAsset } from '@/services/assets'
 import { useToast } from '@/hooks/use-toast'
 import { useRealtime } from '@/hooks/use-realtime'
-import { format } from 'date-fns'
 
-const EQUIP_CATEGORIES = [
-  'Equipamento Médico',
-  'TI',
-  'Mobiliário',
-  'Máquina',
-  'Outros Equipamentos',
+const INFRA_CATEGORIES = [
+  'Elétrica',
+  'Hidráulica',
+  'Predial',
+  'Climatização',
+  'Segurança',
+  'Infraestrutura',
 ]
 
-export default function Equipment() {
+export default function Infrastructure() {
   const [assets, setAssets] = useState<any[]>([])
   const [units, setUnits] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -66,16 +65,11 @@ export default function Equipment() {
   const loadData = async () => {
     try {
       const [assetsData, unitsData] = await Promise.all([getAssets(), getUnits()])
-      const infraCats = [
-        'Elétrica',
-        'Hidráulica',
-        'Predial',
-        'Climatização',
-        'Segurança',
-        'Infraestrutura',
-      ]
-      const eqAssets = assetsData.filter((a) => !infraCats.includes(a.category))
-      setAssets(eqAssets)
+      const infraAssets = assetsData.filter(
+        (a) =>
+          INFRA_CATEGORIES.includes(a.category) || a.category?.toLowerCase() === 'infraestrutura',
+      )
+      setAssets(infraAssets)
       setUnits(unitsData)
     } catch (e: any) {
       toast({ title: 'Erro ao carregar dados', description: e.message, variant: 'destructive' })
@@ -93,10 +87,10 @@ export default function Equipment() {
   })
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Deseja realmente remover este equipamento?')) return
+    if (!confirm('Deseja realmente remover esta estrutura?')) return
     try {
       await deleteAsset(id)
-      toast({ title: 'Equipamento removido' })
+      toast({ title: 'Estrutura removida' })
       loadData()
     } catch (e: any) {
       toast({ title: 'Erro ao remover', description: e.message, variant: 'destructive' })
@@ -109,15 +103,16 @@ export default function Equipment() {
     if (filterStatus !== 'all' && a.status !== filterStatus) return false
     if (searchQuery) {
       const q = searchQuery.toLowerCase()
-      if (!a.name?.toLowerCase().includes(q) && !a.brand?.toLowerCase().includes(q)) return false
+      if (!a.name?.toLowerCase().includes(q)) return false
     }
     return true
   })
 
-  const total = assets.length
-  const operational = assets.filter((a) => a.status === 'operational').length
-  const maintenance = assets.filter((a) => a.status === 'maintenance').length
-  const offline = assets.filter((a) => a.status === 'offline').length
+  const criticalItems = assets.filter((a) => a.status === 'offline' || a.weight === 3).length
+  const pendingMaintenance = assets.filter((a) => a.status === 'maintenance').length
+  const unitsWithAlerts = new Set(
+    assets.filter((a) => a.status !== 'operational' && a.unit).map((a) => a.unit),
+  ).size
 
   const openDrawer = (asset: any = null) => {
     setSelectedAsset(asset)
@@ -127,9 +122,7 @@ export default function Equipment() {
   const StatusBadge = ({ status }: { status: string }) => {
     if (status === 'operational')
       return (
-        <Badge className="bg-emerald-500 hover:bg-emerald-600 border-transparent">
-          Operacional 🟢
-        </Badge>
+        <Badge className="bg-emerald-500 hover:bg-emerald-600 border-transparent">Regular 🟢</Badge>
       )
     if (status === 'maintenance')
       return (
@@ -138,7 +131,7 @@ export default function Equipment() {
     if (status === 'offline')
       return (
         <Badge className="bg-red-500 hover:bg-red-600 border-transparent animate-pulse-soft">
-          Inoperante 🔴
+          Crítico 🔴
         </Badge>
       )
     return (
@@ -148,55 +141,30 @@ export default function Equipment() {
     )
   }
 
-  const WorkflowBadge = ({ status }: { status: string }) => {
-    const map: Record<string, string> = {
-      'Extracted (IA)': 'Extraído (IA)',
-      'Pending Conference': 'Pendente',
-      'Validated by Finance': 'Validado',
-      'Completed/Archived': 'Arquivado',
-    }
-    return (
-      <Badge variant="secondary" className="font-normal text-[10px]">
-        {map[status] || status}
-      </Badge>
-    )
-  }
-
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 text-[#002D5F]">
-          <Monitor className="h-8 w-8" />
+          <Building className="h-8 w-8" />
           <div>
-            <h1 className="text-2xl font-bold">Equipamentos & Máquinas</h1>
-            <p className="text-sm text-slate-500">Gestão operacional de ativos técnicos</p>
+            <h1 className="text-2xl font-bold">Infraestrutura Física</h1>
+            <p className="text-sm text-slate-500">Monitoramento da saúde estrutural das unidades</p>
           </div>
         </div>
         <Button onClick={() => openDrawer()} className="bg-[#002D5F] hover:bg-[#004A99]">
-          <Plus className="h-4 w-4 mr-2" /> Novo Equipamento
+          <Plus className="h-4 w-4 mr-2" /> Nova Estrutura
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-slate-200 shadow-sm">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="border-red-200 shadow-sm">
           <CardContent className="p-6 flex items-center gap-4">
-            <div className="p-3 bg-blue-50 rounded-full text-blue-600">
-              <Activity className="h-6 w-6" />
+            <div className="p-3 bg-red-50 rounded-full text-red-600">
+              <AlertTriangle className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-500">Total de Equipamentos</p>
-              <h3 className="text-2xl font-bold text-slate-800">{total}</h3>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-emerald-200 shadow-sm">
-          <CardContent className="p-6 flex items-center gap-4">
-            <div className="p-3 bg-emerald-50 rounded-full text-emerald-600">
-              <CheckCircle2 className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500">Operacional</p>
-              <h3 className="text-2xl font-bold text-slate-800">{operational}</h3>
+              <p className="text-sm font-medium text-slate-500">Pontos Críticos</p>
+              <h3 className="text-2xl font-bold text-slate-800">{criticalItems}</h3>
             </div>
           </CardContent>
         </Card>
@@ -206,19 +174,19 @@ export default function Equipment() {
               <Wrench className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-500">Em Manutenção</p>
-              <h3 className="text-2xl font-bold text-slate-800">{maintenance}</h3>
+              <p className="text-sm font-medium text-slate-500">Pendentes de Manutenção</p>
+              <h3 className="text-2xl font-bold text-slate-800">{pendingMaintenance}</h3>
             </div>
           </CardContent>
         </Card>
-        <Card className="border-red-200 shadow-sm">
+        <Card className="border-blue-200 shadow-sm">
           <CardContent className="p-6 flex items-center gap-4">
-            <div className="p-3 bg-red-50 rounded-full text-red-600">
-              <AlertCircle className="h-6 w-6" />
+            <div className="p-3 bg-blue-50 rounded-full text-blue-600">
+              <Building className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-500">Inoperante / Crítico</p>
-              <h3 className="text-2xl font-bold text-slate-800">{offline}</h3>
+              <p className="text-sm font-medium text-slate-500">Unidades com Alertas</p>
+              <h3 className="text-2xl font-bold text-slate-800">{unitsWithAlerts}</h3>
             </div>
           </CardContent>
         </Card>
@@ -228,7 +196,7 @@ export default function Equipment() {
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
-            placeholder="Buscar por nome ou marca..."
+            placeholder="Buscar por nome da estrutura..."
             className="pl-9 h-10"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -255,9 +223,9 @@ export default function Equipment() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos Status</SelectItem>
-              <SelectItem value="operational">Operacional</SelectItem>
-              <SelectItem value="maintenance">Em Manutenção</SelectItem>
-              <SelectItem value="offline">Inoperante / Crítico</SelectItem>
+              <SelectItem value="operational">Regular</SelectItem>
+              <SelectItem value="maintenance">Manutenção</SelectItem>
+              <SelectItem value="offline">Crítico</SelectItem>
             </SelectContent>
           </Select>
 
@@ -267,7 +235,7 @@ export default function Equipment() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas Categorias</SelectItem>
-              {EQUIP_CATEGORIES.map((c) => (
+              {INFRA_CATEGORIES.map((c) => (
                 <SelectItem key={c} value={c}>
                   {c}
                 </SelectItem>
@@ -283,16 +251,16 @@ export default function Equipment() {
         ) : filteredAssets.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 px-4 text-center bg-slate-50">
             <div className="bg-white p-4 rounded-full shadow-sm mb-4">
-              <Monitor className="h-8 w-8 text-slate-400" />
+              <Building className="h-8 w-8 text-slate-400" />
             </div>
             <h3 className="text-lg font-semibold text-slate-800 mb-2">
-              Nenhum equipamento encontrado
+              Nenhuma estrutura encontrada
             </h3>
             <p className="text-slate-500 max-w-sm mb-6">
-              Ajuste seus filtros ou registre um novo equipamento.
+              Nenhuma estrutura corresponde aos filtros, ou inicie cadastrando um novo ponto.
             </p>
             <Button onClick={() => openDrawer()} variant="outline">
-              Cadastrar Equipamento
+              Cadastrar Estrutura
             </Button>
           </div>
         ) : (
@@ -300,11 +268,11 @@ export default function Equipment() {
             <Table>
               <TableHeader className="bg-slate-50/80">
                 <TableRow>
-                  <TableHead className="w-[30%]">Equipamento</TableHead>
-                  <TableHead>Localização</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Progresso</TableHead>
-                  <TableHead>Última Insp. / Info</TableHead>
+                  <TableHead className="w-[30%]">Estrutura / Ponto</TableHead>
+                  <TableHead>Unidade</TableHead>
+                  <TableHead>Categoria</TableHead>
+                  <TableHead>Saúde</TableHead>
+                  <TableHead>Risco</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -314,27 +282,38 @@ export default function Equipment() {
                     <TableCell>
                       <div className="font-semibold text-slate-900">{item.name}</div>
                       <div className="text-[11px] text-slate-500 uppercase tracking-wider">
-                        {item.brand} {item.model ? `• ${item.model}` : ''}
+                        {item.responsible_company || 'Manutenção Interna'}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="font-medium text-slate-700">
                         {item.expand?.unit?.name || 'N/A'}
                       </div>
-                      <div className="text-xs text-slate-500">
-                        {item.category || 'Sem Categoria'}
-                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="font-normal">
+                        {item.category || 'Geral'}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <StatusBadge status={item.status} />
                     </TableCell>
                     <TableCell>
-                      <WorkflowBadge status={item.workflow_status} />
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm text-slate-600">
-                        {item.updated ? format(new Date(item.updated), 'dd/MM/yyyy') : '-'}
-                      </div>
+                      {item.weight === 3 && (
+                        <Badge className="bg-red-50 text-red-700 border-red-200 shadow-none">
+                          Alto (3)
+                        </Badge>
+                      )}
+                      {item.weight === 2 && (
+                        <Badge className="bg-amber-50 text-amber-700 border-amber-200 shadow-none">
+                          Atenção (2)
+                        </Badge>
+                      )}
+                      {(item.weight === 1 || !item.weight) && (
+                        <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 shadow-none">
+                          Baixo (1)
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
@@ -373,7 +352,7 @@ export default function Equipment() {
         onClose={() => setIsDrawerOpen(false)}
         asset={selectedAsset}
         units={units}
-        mode="equipment"
+        mode="infrastructure"
         onSaveComplete={loadData}
       />
     </div>
