@@ -8,6 +8,7 @@ export interface Personnel {
   admission_date?: string
   probation_45?: string
   probation_90?: string
+  observations?: string
   workflow_status: string
   unit: string
   created: string
