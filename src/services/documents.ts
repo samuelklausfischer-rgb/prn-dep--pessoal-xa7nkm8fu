@@ -16,10 +16,18 @@ export interface Document {
   unit?: string
   created: string
   updated: string
+  urgency?: 'low' | 'medium' | 'high'
   expand?: {
     unit?: { id: string; name: string }
     uploaded_by?: { id: string; name: string; avatar?: string }
   }
+}
+
+export const getAllDocuments = () => {
+  return pb.collection('documents').getFullList<Document>({
+    expand: 'unit,uploaded_by',
+    sort: 'due_date',
+  })
 }
 
 export const getComplianceDocuments = () => {

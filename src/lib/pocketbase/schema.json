@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-06T14:24:05.560Z",
+  "generatedAt": "2026-05-06T14:33:41.961Z",
   "collections": [
     {
       "name": "users",
@@ -424,6 +424,13 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "urgency",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["low", "medium", "high"]
         }
       ],
       "indexes": []
@@ -503,6 +510,91 @@
         "CREATE INDEX idx_system_events_created ON system_events (created DESC)",
         "CREATE INDEX idx_system_events_entity ON system_events (entity_type, entity_id)"
       ]
+    },
+    {
+      "name": "inspections",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
+      },
+      "fields": [
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "type",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["planned", "pending", "completed", "overdue"]
+        },
+        {
+          "name": "criticality",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["low", "medium", "high"]
+        },
+        {
+          "name": "unit",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "units"
+        },
+        {
+          "name": "scheduled_date",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "completed_date",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "inspector",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "notes",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
     }
   ]
 }
