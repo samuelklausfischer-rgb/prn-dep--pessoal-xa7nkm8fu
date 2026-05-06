@@ -75,12 +75,12 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border shadow-lg">
       <SidebarHeader className="py-4 flex justify-center">
         <div
-          className={`flex items-center justify-center transition-all duration-300 bg-white rounded-lg p-2 ${isCollapsed ? 'w-10 h-10 mx-auto' : 'w-[85%] mx-auto'}`}
+          className={`flex items-center justify-center transition-all duration-300 bg-white shadow-sm rounded-lg p-2 ${isCollapsed ? 'w-10 h-10 mx-auto' : 'w-[85%] mx-auto'}`}
         >
           <img
             src="https://prndiagnosticos.com.br/wp-content/themes/prnd/assets/images/logo.png"
             alt="PRN Logo"
-            className={`object-contain transition-all duration-300 ${isCollapsed ? 'h-5' : 'h-8'}`}
+            className={`object-contain transition-all duration-300 ${isCollapsed ? 'h-5' : 'h-8'} drop-shadow-sm`}
           />
         </div>
       </SidebarHeader>
@@ -101,7 +101,7 @@ export function AppSidebar() {
                         asChild
                         isActive={isActive}
                         tooltip={item.title}
-                        className={`transition-all duration-200 ${isActive ? 'data-[active=true]:border-l-4 data-[active=true]:border-sky-400 bg-sidebar-accent/50 text-white' : 'text-sidebar-foreground/80 hover:text-white hover:bg-sidebar-accent/30'}`}
+                        className={`transition-all duration-200 ${isActive ? 'data-[active=true]:border-l-4 data-[active=true]:border-primary bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm' : 'text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'}`}
                       >
                         <Link to={item.url} className="flex items-center gap-3 w-full">
                           <item.icon className="h-4 w-4 shrink-0" />
@@ -123,7 +123,7 @@ export function AppSidebar() {
               asChild
               tooltip="Configurações"
               isActive={location.pathname === '/dashboard/settings'}
-              className={`text-sidebar-foreground/80 hover:text-white transition-all duration-200 ${location.pathname === '/dashboard/settings' ? 'data-[active=true]:border-l-4 data-[active=true]:border-sky-400 bg-sidebar-accent/50 text-white' : 'hover:bg-sidebar-accent/30'}`}
+              className={`transition-all duration-200 ${location.pathname === '/dashboard/settings' ? 'data-[active=true]:border-l-4 data-[active=true]:border-primary bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm' : 'text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'}`}
             >
               <Link to="/dashboard/settings" className="flex items-center gap-3">
                 <Settings className="h-4 w-4 shrink-0" />
@@ -138,7 +138,7 @@ export function AppSidebar() {
               <UserCircle className="h-8 w-8 text-sidebar-foreground/70 shrink-0" />
               {!isCollapsed && (
                 <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-sm font-medium text-white truncate">
+                  <span className="text-sm font-medium text-sidebar-foreground truncate">
                     {user?.name || user?.email}
                   </span>
                   <span className="text-xs text-sidebar-foreground/60 truncate capitalize">
@@ -152,7 +152,7 @@ export function AppSidebar() {
                     signOut()
                     navigate('/')
                   }}
-                  className="p-1.5 hover:bg-sidebar-accent/50 rounded-md text-sidebar-foreground/60 hover:text-white transition-colors ml-auto"
+                  className="p-1.5 hover:bg-sidebar-accent/50 rounded-md text-sidebar-foreground/60 hover:text-sidebar-foreground transition-colors ml-auto"
                   title="Sair"
                 >
                   <LogOut className="h-4 w-4" />

@@ -17,52 +17,59 @@ import Settings from './pages/dashboard/Settings'
 import NotFound from './pages/NotFound'
 import { DashboardLayout } from './components/DashboardLayout'
 import { AuthProvider, useAuth } from './contexts/auth-context'
+import { ThemeProvider } from './components/theme-provider'
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth()
   const location = useLocation()
 
   if (loading)
-    return <div className="min-h-screen flex items-center justify-center">Carregando...</div>
+    return (
+      <div className="min-h-screen flex items-center justify-center text-muted-foreground animate-pulse">
+        Carregando...
+      </div>
+    )
   if (!user) return <Navigate to="/" state={{ from: location }} replace />
 
   return <>{children}</>
 }
 
 const App = () => (
-  <AuthProvider>
-    <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <Routes>
-          <Route path="/" element={<Index />} />
+  <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+    <AuthProvider>
+      <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <Routes>
+            <Route path="/" element={<Index />} />
 
-          <Route
-            element={
-              <ProtectedRoute>
-                <DashboardLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/dashboard/timeline" element={<Timeline />} />
-            <Route path="/dashboard/employees" element={<Employees />} />
-            <Route path="/dashboard/exams" element={<Exams />} />
-            <Route path="/dashboard/equipment" element={<Equipment />} />
-            <Route path="/dashboard/infrastructure" element={<Infrastructure />} />
-            <Route path="/dashboard/inspections" element={<Inspections />} />
-            <Route path="/dashboard/documents" element={<Documents />} />
-            <Route path="/dashboard/import" element={<ImportData />} />
-            <Route path="/dashboard/validations" element={<Validations />} />
-            <Route path="/dashboard/settings" element={<Settings />} />
-          </Route>
+            <Route
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/dashboard/timeline" element={<Timeline />} />
+              <Route path="/dashboard/employees" element={<Employees />} />
+              <Route path="/dashboard/exams" element={<Exams />} />
+              <Route path="/dashboard/equipment" element={<Equipment />} />
+              <Route path="/dashboard/infrastructure" element={<Infrastructure />} />
+              <Route path="/dashboard/inspections" element={<Inspections />} />
+              <Route path="/dashboard/documents" element={<Documents />} />
+              <Route path="/dashboard/import" element={<ImportData />} />
+              <Route path="/dashboard/validations" element={<Validations />} />
+              <Route path="/dashboard/settings" element={<Settings />} />
+            </Route>
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </TooltipProvider>
-    </BrowserRouter>
-  </AuthProvider>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </TooltipProvider>
+      </BrowserRouter>
+    </AuthProvider>
+  </ThemeProvider>
 )
 
 export default App
