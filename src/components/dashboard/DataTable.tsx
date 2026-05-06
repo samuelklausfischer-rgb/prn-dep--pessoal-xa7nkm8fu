@@ -108,7 +108,7 @@ export function DataTable({ items, onInlineEdit, onDelete, onViewDetails }: Data
 
   return (
     <Card className="glass-panel overflow-hidden animate-fade-in-up print:shadow-none print:border-none print:bg-transparent">
-      {selectedIds.size > 0 && role === 'Financeiro' && (
+      {selectedIds.size > 0 && role === 'financeiro' && (
         <div className="bg-[#002D5F]/5 border-b border-[#002D5F]/10 p-3 flex items-center justify-between animate-fade-in">
           <span className="text-sm font-medium text-[#002D5F]">
             {selectedIds.size}{' '}
@@ -128,7 +128,7 @@ export function DataTable({ items, onInlineEdit, onDelete, onViewDetails }: Data
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent whitespace-nowrap">
-              {role === 'Financeiro' && (
+              {role === 'financeiro' && (
                 <TableHead className="w-[40px] px-4">
                   <Checkbox
                     checked={selectedIds.size === sortedItems.length && sortedItems.length > 0}
@@ -149,7 +149,7 @@ export function DataTable({ items, onInlineEdit, onDelete, onViewDetails }: Data
             {sortedItems.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={role === 'Financeiro' ? 8 : 7}
+                  colSpan={role === 'financeiro' ? 8 : 7}
                   className="text-center py-8 text-muted-foreground"
                 >
                   Nenhum registro encontrado.
@@ -161,7 +161,7 @@ export function DataTable({ items, onInlineEdit, onDelete, onViewDetails }: Data
                   key={item.id}
                   className={`group transition-colors hover:bg-slate-50/50 ${selectedIds.has(item.id) ? 'bg-[#002D5F]/5' : ''}`}
                 >
-                  {role === 'Financeiro' && (
+                  {role === 'financeiro' && (
                     <TableCell className="px-4">
                       <Checkbox
                         checked={selectedIds.has(item.id)}
@@ -171,11 +171,17 @@ export function DataTable({ items, onInlineEdit, onDelete, onViewDetails }: Data
                   )}
                   <TableCell className="font-medium p-1">
                     <div className="flex items-center gap-2">
-                      <Input
-                        value={item.name}
-                        onChange={(e) => onInlineEdit(item.id, 'name', e.target.value)}
-                        className="border-transparent bg-transparent hover:bg-white hover:border-slate-200 focus:bg-white h-9 shadow-none focus-visible:ring-1 min-w-[150px]"
-                      />
+                      {role === 'admin' ? (
+                        <Input
+                          value={item.name}
+                          onChange={(e) => onInlineEdit(item.id, 'name', e.target.value)}
+                          className="border-transparent bg-transparent hover:bg-white hover:border-slate-200 focus:bg-white h-9 shadow-none focus-visible:ring-1 min-w-[150px]"
+                        />
+                      ) : (
+                        <span className="px-3 py-1.5 truncate max-w-[200px] block">
+                          {item.name}
+                        </span>
+                      )}
                     </div>
                     <div className="px-3 text-[11px] text-slate-500 font-normal">{item.unit}</div>
                   </TableCell>
@@ -198,12 +204,20 @@ export function DataTable({ items, onInlineEdit, onDelete, onViewDetails }: Data
                     </Select>
                   </TableCell>
                   <TableCell className="p-1">
-                    <Input
-                      type="date"
-                      value={item.dueDate}
-                      onChange={(e) => onInlineEdit(item.id, 'dueDate', e.target.value)}
-                      className="border-transparent bg-transparent hover:bg-white hover:border-slate-200 focus:bg-white h-9 w-auto min-w-[130px] shadow-none focus-visible:ring-1"
-                    />
+                    {role === 'admin' ? (
+                      <Input
+                        type="date"
+                        value={item.dueDate}
+                        onChange={(e) => onInlineEdit(item.id, 'dueDate', e.target.value)}
+                        className="border-transparent bg-transparent hover:bg-white hover:border-slate-200 focus:bg-white h-9 w-auto min-w-[130px] shadow-none focus-visible:ring-1"
+                      />
+                    ) : (
+                      <span className="px-3 text-sm">
+                        {item.dueDate
+                          ? new Date(item.dueDate + 'T12:00:00').toLocaleDateString('pt-BR')
+                          : '-'}
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell>{getStatusBadge(item.dueDate)}</TableCell>
                   <TableCell className="text-right p-2">
@@ -219,15 +233,17 @@ export function DataTable({ items, onInlineEdit, onDelete, onViewDetails }: Data
                           <FileText className="h-4 w-4 mr-1" /> Ficha
                         </Button>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => onDelete(item.id)}
-                        className="h-8 w-8 hover:text-red-600 hover:bg-red-50 print:hidden"
-                        title="Remover"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {role === 'admin' && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onDelete(item.id)}
+                          className="h-8 w-8 hover:text-red-600 hover:bg-red-50 print:hidden"
+                          title="Remover"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

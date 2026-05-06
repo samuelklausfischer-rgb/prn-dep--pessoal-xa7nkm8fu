@@ -1,12 +1,11 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import pb from '@/lib/pocketbase/client'
 
-export type UserRole = 'Admin' | 'Financeiro'
+export type UserRole = 'admin' | 'financeiro'
 
 interface AuthContextType {
   user: any
   role: UserRole
-  setRole: (role: UserRole) => void
   signIn: (email: string, pass: string) => Promise<{ error: any }>
   signOut: () => void
   loading: boolean
@@ -17,7 +16,6 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any>(pb.authStore.record)
   const [loading, setLoading] = useState(true)
-  const [role, setRole] = useState<UserRole>('Admin')
 
   useEffect(() => {
     const unsubscribe = pb.authStore.onChange((_token, record) => {
@@ -26,6 +24,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false)
     return () => unsubscribe()
   }, [])
+
+  // Default to financeiro if role is not set, or extract from user record
+  const role = (user?.role as UserRole) || 'financeiro'
 
   const signIn = async (email: string, pass: string) => {
     try {
@@ -41,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, role, setRole, signIn, signOut, loading }}>
+    <AuthContext.Provider value={{ user, role, signIn, signOut, loading }}>
       {children}
     </AuthContext.Provider>
   )

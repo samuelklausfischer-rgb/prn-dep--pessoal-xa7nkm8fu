@@ -3,16 +3,9 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/app-sidebar'
 import { SmartSearch } from './dashboard/SmartSearch'
 import { useAuth } from '@/contexts/auth-context'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 
 export function DashboardLayout() {
-  const { role, setRole } = useAuth()
+  const { role } = useAuth()
 
   return (
     <SidebarProvider>
@@ -26,18 +19,9 @@ export function DashboardLayout() {
             <SmartSearch />
           </div>
           <div className="flex items-center gap-4">
-            <div className="text-sm font-medium text-slate-500 hidden sm:block">
-              Simular Perfil:
+            <div className="text-sm font-medium text-slate-500 hidden sm:block capitalize">
+              Perfil: {role}
             </div>
-            <Select value={role} onValueChange={(v: any) => setRole(v)}>
-              <SelectTrigger className="w-[130px] h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Admin">Admin</SelectItem>
-                <SelectItem value="Financeiro">Financeiro</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </header>
         <div className="flex-1 overflow-auto custom-scrollbar p-6 lg:p-8 animate-fade-in-up print:p-0">

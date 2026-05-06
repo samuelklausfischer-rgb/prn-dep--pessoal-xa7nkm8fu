@@ -4,14 +4,11 @@ import type { DashboardItem } from '@/types'
 const formatDate = (d?: string) => (d ? d.substring(0, 10) : '')
 
 export async function getDashboardItems(): Promise<DashboardItem[]> {
-  const [units, personnel, assets, documents] = await Promise.all([
-    pb.collection('units').getFullList(),
-    pb.collection('personnel').getFullList(),
-    pb.collection('assets').getFullList(),
-    pb.collection('documents').getFullList(),
+  const [personnel, assets, documents] = await Promise.all([
+    pb.collection('personnel').getFullList({ expand: 'unit' }),
+    pb.collection('assets').getFullList({ expand: 'unit' }),
+    pb.collection('documents').getFullList({ expand: 'unit' }),
   ])
-
-  const getUnitName = (id: string) => units.find((u) => u.id === id)?.name || 'PRN Diagnósticos'
 
   const items: DashboardItem[] = []
 
@@ -19,7 +16,7 @@ export async function getDashboardItems(): Promise<DashboardItem[]> {
     items.push({
       id: p.id,
       name: p.name,
-      unit: getUnitName(p.unit) as any,
+      unit: (p.expand?.unit?.name as any) || 'PRN Diagnósticos',
       category: 'Human Capital',
       status: p.workflow_status || 'Extracted (IA)',
       weight: p.weight || 2,
@@ -37,7 +34,7 @@ export async function getDashboardItems(): Promise<DashboardItem[]> {
     items.push({
       id: a.id,
       name: a.name,
-      unit: getUnitName(a.unit) as any,
+      unit: (a.expand?.unit?.name as any) || 'PRN Diagnósticos',
       category: 'Technical Asset',
       status: a.workflow_status || 'Extracted (IA)',
       weight: a.weight || 3,
@@ -55,7 +52,7 @@ export async function getDashboardItems(): Promise<DashboardItem[]> {
     items.push({
       id: d.id,
       name: d.title,
-      unit: getUnitName(d.unit) as any,
+      unit: (d.expand?.unit?.name as any) || 'PRN Diagnósticos',
       category: 'Legal Documentation',
       status: d.workflow_status || 'Extracted (IA)',
       weight: d.weight || 1,
@@ -70,6 +67,11 @@ export async function getDashboardItems(): Promise<DashboardItem[]> {
   return items
 }
 
+async function getUnitId(name: string) {
+  const units = await pb.collection('units').getFullList()
+  return units.find((u) => u.name === name)?.id
+}
+
 export async function createDashboardItem(item: Partial<DashboardItem>) {
   const col =
     item.category === 'Human Capital'
@@ -78,8 +80,7 @@ export async function createDashboardItem(item: Partial<DashboardItem>) {
         ? 'assets'
         : 'documents'
 
-  const units = await pb.collection('units').getFullList()
-  const unitId = units.find((u) => u.name === item.unit)?.id
+  const unitId = item.unit ? await getUnitId(item.unit) : null
 
   const data: any = {
     workflow_status: item.status,
@@ -143,8 +144,7 @@ export async function updateDashboardItem(
   if (updates.notes) data.notes = updates.notes
 
   if (updates.unit) {
-    const units = await pb.collection('units').getFullList()
-    data.unit = units.find((u) => u.name === updates.unit)?.id
+    data.unit = await getUnitId(updates.unit)
   }
 
   if (col === 'personnel') {

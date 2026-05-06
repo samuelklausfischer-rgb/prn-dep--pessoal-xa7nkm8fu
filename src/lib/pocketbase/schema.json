@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-06T13:57:18.799Z",
+  "generatedAt": "2026-05-06T14:03:06.862Z",
   "collections": [
     {
       "name": "users",
@@ -37,6 +37,13 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "role",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["admin", "financeiro"]
         }
       ],
       "indexes": [

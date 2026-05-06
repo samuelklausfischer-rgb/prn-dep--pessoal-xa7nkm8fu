@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '@/contexts/auth-context'
 import {
   LayoutDashboard,
   Clock,
@@ -64,6 +65,7 @@ export function AppSidebar() {
   const location = useLocation()
   const navigate = useNavigate()
   const { state, isMobile } = useSidebar()
+  const { user, role, signOut } = useAuth()
 
   const isCollapsed = state === 'collapsed' && !isMobile
 
@@ -134,13 +136,20 @@ export function AppSidebar() {
               <UserCircle className="h-8 w-8 text-sidebar-foreground/70 shrink-0" />
               {!isCollapsed && (
                 <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-sm font-medium text-white truncate">Samuel (Chefe)</span>
-                  <span className="text-xs text-sidebar-foreground/60 truncate">Financeiro</span>
+                  <span className="text-sm font-medium text-white truncate">
+                    {user?.name || user?.email}
+                  </span>
+                  <span className="text-xs text-sidebar-foreground/60 truncate capitalize">
+                    {role}
+                  </span>
                 </div>
               )}
               {!isCollapsed && (
                 <button
-                  onClick={() => navigate('/')}
+                  onClick={() => {
+                    signOut()
+                    navigate('/')
+                  }}
                   className="p-1.5 hover:bg-sidebar-accent/50 rounded-md text-sidebar-foreground/60 hover:text-white transition-colors ml-auto"
                   title="Sair"
                 >

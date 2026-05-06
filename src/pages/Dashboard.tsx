@@ -7,6 +7,7 @@ import {
   AlertCircle,
   Printer,
   BrainCircuit,
+  RefreshCw,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,10 +27,12 @@ import { UrgentActions } from '@/components/dashboard/UrgentActions'
 import { WeeklyReport } from '@/components/dashboard/WeeklyReport'
 import { RecordDetailSheet } from '@/components/dashboard/RecordDetailSheet'
 import { BICharts } from '@/components/dashboard/BICharts'
+import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import type { DashboardItem, RecordCategory } from '@/types'
 import { calculateWeight } from '@/lib/dashboard-utils'
 import { useRealtime } from '@/hooks/use-realtime'
+import { useAuth } from '@/contexts/auth-context'
 import {
   getDashboardItems,
   createDashboardItem,
@@ -46,6 +49,7 @@ const getRelativeDate = (daysToAdd: number) => {
 export default function Dashboard() {
   const [items, setItems] = useState<DashboardItem[]>([])
   const [loadingData, setLoadingData] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState<DashboardItem | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -54,15 +58,23 @@ export default function Dashboard() {
   const [showPendingOnly, setShowPendingOnly] = useState(false)
 
   const { toast } = useToast()
+  const { role } = useAuth()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const loadData = async () => {
     try {
+      setLoadingData(true)
+      setError(null)
       const data = await getDashboardItems()
       setItems(data)
     } catch (error) {
       console.error(error)
-      toast({ title: 'Erro', description: 'Não foi possível carregar os dados.' })
+      setError('Não foi possível carregar os dados.')
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível carregar os dados.',
+        variant: 'destructive',
+      })
     } finally {
       setLoadingData(false)
     }
@@ -92,8 +104,13 @@ export default function Dashboard() {
         description: 'Nova entidade processada e categorizada.',
       })
       setIsDialogOpen(false)
+      loadData()
     } catch (e) {
-      toast({ title: 'Erro', description: 'Não foi possível salvar a entidade.' })
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível salvar a entidade.',
+        variant: 'destructive',
+      })
     }
   }
 
@@ -110,7 +127,7 @@ export default function Dashboard() {
       }
     } catch (e) {
       loadData()
-      toast({ title: 'Erro', description: 'Falha ao atualizar registro.' })
+      toast({ title: 'Erro', description: 'Falha ao atualizar registro.', variant: 'destructive' })
     }
   }
 
@@ -121,8 +138,9 @@ export default function Dashboard() {
     try {
       await updateDashboardItem(id, item.category, updates)
       toast({ title: 'Atualizado', description: 'Alterações salvas com sucesso.' })
+      loadData()
     } catch (e) {
-      toast({ title: 'Erro', description: 'Erro ao salvar alterações.' })
+      toast({ title: 'Erro', description: 'Erro ao salvar alterações.', variant: 'destructive' })
     }
   }
 
@@ -148,8 +166,9 @@ export default function Dashboard() {
     try {
       await deleteDashboardItem(id, item.category)
       toast({ title: 'Removido', description: 'O registro foi removido do sistema.' })
+      loadData()
     } catch (e) {
-      toast({ title: 'Erro', description: 'Erro ao remover registro.' })
+      toast({ title: 'Erro', description: 'Erro ao remover registro.', variant: 'destructive' })
     }
   }
 
@@ -175,8 +194,13 @@ export default function Dashboard() {
         description: 'Documento classificado automaticamente na ontologia.',
         className: 'bg-indigo-50 border-indigo-200 text-indigo-900',
       })
+      loadData()
     } catch (err) {
-      toast({ title: 'Erro', description: 'Falha na extração de documento.' })
+      toast({
+        title: 'Erro',
+        description: 'Falha na extração de documento.',
+        variant: 'destructive',
+      })
     }
 
     if (fileInputRef.current) fileInputRef.current.value = ''
@@ -191,8 +215,38 @@ export default function Dashboard() {
         : 'bg-transparent',
   )
 
-  if (loadingData)
-    return <div className="p-8 text-center text-slate-500">Sincronizando The Brain...</div>
+  if (loadingData && items.length === 0) {
+    return (
+      <div className={containerClasses}>
+        <div className="space-y-6 animate-pulse">
+          <Skeleton className="h-10 w-1/4 rounded-lg" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Skeleton className="h-32 rounded-xl" />
+            <Skeleton className="h-32 rounded-xl" />
+            <Skeleton className="h-32 rounded-xl" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Skeleton className="h-64 rounded-xl" />
+            <Skeleton className="h-64 rounded-xl" />
+          </div>
+          <Skeleton className="h-96 rounded-xl w-full" />
+        </div>
+      </div>
+    )
+  }
+
+  if (error && items.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)]">
+        <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+        <h2 className="text-xl font-bold text-slate-800 mb-2">Erro ao carregar dados</h2>
+        <p className="text-slate-500 mb-6">{error}</p>
+        <Button onClick={loadData} className="bg-[#004A99] hover:bg-[#003d7a]">
+          <RefreshCw className="mr-2 h-4 w-4" /> Tentar Novamente
+        </Button>
+      </div>
+    )
+  }
 
   return (
     <div className={containerClasses}>
@@ -264,22 +318,24 @@ export default function Dashboard() {
 
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 print:hidden mt-8">
         <h2 className="text-xl font-semibold text-[#004A99]">Tabela de Entidades (Workflow)</h2>
-        <div className="flex gap-3 w-full sm:w-auto">
-          <input type="file" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
-          <Button
-            variant="outline"
-            className="flex-1 sm:flex-none border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <FileSpreadsheet className="mr-2 h-4 w-4" /> Extrair via IA
-          </Button>
-          <Button
-            className="flex-1 sm:flex-none bg-[#004A99] hover:bg-[#003d7a] text-white shadow-md"
-            onClick={handleOpenAdd}
-          >
-            <Plus className="mr-2 h-4 w-4" /> Novo Registro Manual
-          </Button>
-        </div>
+        {role === 'admin' && (
+          <div className="flex gap-3 w-full sm:w-auto">
+            <input type="file" className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
+            <Button
+              variant="outline"
+              className="flex-1 sm:flex-none border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <FileSpreadsheet className="mr-2 h-4 w-4" /> Extrair via IA
+            </Button>
+            <Button
+              className="flex-1 sm:flex-none bg-[#004A99] hover:bg-[#003d7a] text-white shadow-md"
+              onClick={handleOpenAdd}
+            >
+              <Plus className="mr-2 h-4 w-4" /> Novo Registro Manual
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="bg-white/50 backdrop-blur-sm p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center print:hidden">
@@ -347,12 +403,14 @@ export default function Dashboard() {
         initialData={null}
       />
 
-      <RecordDetailSheet
-        item={selectedRecord}
-        isOpen={!!selectedRecord}
-        onClose={() => setSelectedRecord(null)}
-        onSave={handleUpdateRecord}
-      />
+      {selectedRecord && (
+        <RecordDetailSheet
+          item={selectedRecord}
+          isOpen={!!selectedRecord}
+          onClose={() => setSelectedRecord(null)}
+          onSave={handleUpdateRecord}
+        />
+      )}
     </div>
   )
 }
