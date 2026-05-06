@@ -1,28 +1,44 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Loader2, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useAuth } from '@/contexts/auth-context'
+import { useToast } from '@/hooks/use-toast'
 
 export default function Index() {
   const navigate = useNavigate()
+  const { signIn, user } = useAuth()
+  const { toast } = useToast()
+
   const [loading, setLoading] = useState(false)
   const [showPwd, setShowPwd] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
 
-  const handleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (user) navigate('/dashboard')
+  }, [user, navigate])
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false)
+    const { error } = await signIn(email, password)
+    setLoading(false)
+    if (error) {
+      toast({
+        title: 'Acesso Negado',
+        description: 'Credenciais inválidas.',
+        variant: 'destructive',
+      })
+    } else {
       navigate('/dashboard')
-    }, 1200)
+    }
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center relative bg-slate-50 overflow-hidden">
-      {/* Decorative background blur blobs */}
       <div className="absolute top-[20%] left-[20%] w-96 h-96 bg-blue-300/30 rounded-full blur-3xl" />
       <div className="absolute bottom-[20%] right-[20%] w-[30rem] h-[30rem] bg-indigo-300/20 rounded-full blur-3xl" />
 
@@ -47,6 +63,8 @@ export default function Index() {
             <Input
               id="email"
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="seu.nome@prndiagnosticos.com.br"
               className="bg-white/50 border-white/40 focus:bg-white transition-colors"
               required
@@ -61,6 +79,8 @@ export default function Index() {
               <Input
                 id="password"
                 type={showPwd ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 className="bg-white/50 border-white/40 focus:bg-white transition-colors pr-10"
                 required

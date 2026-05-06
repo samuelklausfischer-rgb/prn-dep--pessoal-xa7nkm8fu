@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -15,7 +15,18 @@ import Validations from './pages/dashboard/Validations'
 import Settings from './pages/dashboard/Settings'
 import NotFound from './pages/NotFound'
 import { DashboardLayout } from './components/DashboardLayout'
-import { AuthProvider } from './contexts/auth-context'
+import { AuthProvider, useAuth } from './contexts/auth-context'
+
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth()
+  const location = useLocation()
+
+  if (loading)
+    return <div className="min-h-screen flex items-center justify-center">Carregando...</div>
+  if (!user) return <Navigate to="/" state={{ from: location }} replace />
+
+  return <>{children}</>
+}
 
 const App = () => (
   <AuthProvider>
@@ -24,11 +35,15 @@ const App = () => (
         <Toaster />
         <Sonner />
         <Routes>
-          {/* Public Routes */}
           <Route path="/" element={<Index />} />
 
-          {/* Protected Dashboard Routes wrapped in DashboardLayout */}
-          <Route element={<DashboardLayout />}>
+          <Route
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/dashboard/timeline" element={<Timeline />} />
             <Route path="/dashboard/employees" element={<Employees />} />
@@ -41,7 +56,6 @@ const App = () => (
             <Route path="/dashboard/settings" element={<Settings />} />
           </Route>
 
-          {/* Fallback */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </TooltipProvider>

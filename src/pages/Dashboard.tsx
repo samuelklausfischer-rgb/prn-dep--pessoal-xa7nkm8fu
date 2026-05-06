@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import {
   FileSpreadsheet,
   Plus,
@@ -27,8 +27,15 @@ import { WeeklyReport } from '@/components/dashboard/WeeklyReport'
 import { RecordDetailSheet } from '@/components/dashboard/RecordDetailSheet'
 import { BICharts } from '@/components/dashboard/BICharts'
 import { cn } from '@/lib/utils'
-import type { DashboardItem, UnitType, RecordCategory } from '@/types'
+import type { DashboardItem, RecordCategory } from '@/types'
 import { calculateWeight } from '@/lib/dashboard-utils'
+import { useRealtime } from '@/hooks/use-realtime'
+import {
+  getDashboardItems,
+  createDashboardItem,
+  updateDashboardItem,
+  deleteDashboardItem,
+} from '@/services/dashboard'
 
 const getRelativeDate = (daysToAdd: number) => {
   const d = new Date()
@@ -36,79 +43,9 @@ const getRelativeDate = (daysToAdd: number) => {
   return d.toISOString().split('T')[0]
 }
 
-const INITIAL_ITEMS: DashboardItem[] = [
-  {
-    id: '1',
-    name: 'Alvará de Funcionamento 2026',
-    unit: 'PRN Diagnósticos',
-    category: 'Legal Documentation',
-    docType: 'Alvará',
-    status: 'Pending Conference',
-    weight: 3,
-    dueDate: getRelativeDate(5),
-    cost: 2500,
-    notes: [],
-  },
-  {
-    id: '2',
-    name: 'Manutenção Tomógrafo RM',
-    unit: 'Medimagem',
-    category: 'Technical Asset',
-    status: 'Validated by Finance',
-    weight: 3,
-    dueDate: getRelativeDate(15),
-    cost: 8000,
-    brand: 'GE Healthcare',
-    serialNumber: 'TM-001',
-    notes: [],
-  },
-  {
-    id: '3',
-    name: 'João Pedro - Admissão',
-    unit: 'PRN Diagnósticos',
-    category: 'Human Capital',
-    status: 'Extracted (IA)',
-    weight: 2,
-    dueDate: getRelativeDate(45),
-    role: 'Técnico Raio-X',
-    cost: 0,
-    notes: [
-      {
-        id: 'n1',
-        text: 'Aguardando envio dos documentos admissionais.',
-        user: 'RH',
-        timestamp: new Date().toISOString(),
-      },
-    ],
-  },
-  {
-    id: '4',
-    name: 'Política Interna de Férias',
-    unit: 'PRN Diagnósticos',
-    category: 'Legal Documentation',
-    docType: 'Internal Document',
-    status: 'Completed/Archived',
-    weight: 1,
-    dueDate: getRelativeDate(120),
-    cost: 0,
-    notes: [],
-  },
-  {
-    id: '5',
-    name: 'Licença Sanitária',
-    unit: 'Medimagem',
-    category: 'Legal Documentation',
-    docType: 'Sanitary License',
-    status: 'Extracted (IA)',
-    weight: 3,
-    dueDate: getRelativeDate(-2),
-    cost: 1500,
-    notes: [],
-  },
-]
-
 export default function Dashboard() {
-  const [items, setItems] = useState<DashboardItem[]>(INITIAL_ITEMS)
+  const [items, setItems] = useState<DashboardItem[]>([])
+  const [loadingData, setLoadingData] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState<DashboardItem | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -119,46 +56,74 @@ export default function Dashboard() {
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleOpenAdd = () => setIsDialogOpen(true)
-
-  const handleSaveModal = (itemData: Partial<DashboardItem>) => {
-    const newItem: DashboardItem = {
-      ...itemData,
-      id: Math.random().toString(36).substr(2, 9),
-      status: 'Extracted (IA)',
-      weight: calculateWeight(itemData),
-      notes: [],
-      lastEditedBy: 'Gestor',
-      lastEditedAt: new Date().toISOString(),
-    } as DashboardItem
-    setItems((prev) => [...prev, newItem])
-    toast({ title: 'Adicionado ao Brain', description: 'Nova entidade processada e categorizada.' })
-    setIsDialogOpen(false)
-  }
-
-  const handleInlineEdit = (id: string, field: keyof DashboardItem, value: any) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              [field]: value,
-              lastEditedBy: 'Gestor',
-              lastEditedAt: new Date().toISOString(),
-            }
-          : item,
-      ),
-    )
-    if (field === 'status' && value === 'Validated by Finance') {
-      toast({ title: 'Status Atualizado', description: 'Registro validado pelo financeiro.' })
+  const loadData = async () => {
+    try {
+      const data = await getDashboardItems()
+      setItems(data)
+    } catch (error) {
+      console.error(error)
+      toast({ title: 'Erro', description: 'Não foi possível carregar os dados.' })
+    } finally {
+      setLoadingData(false)
     }
   }
 
-  const handleUpdateRecord = (id: string, updates: Partial<DashboardItem>) => {
-    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...updates } : item)))
-    setSelectedRecord((prev) =>
-      prev && prev.id === id ? ({ ...prev, ...updates } as DashboardItem) : prev,
-    )
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  useRealtime('personnel', () => loadData())
+  useRealtime('assets', () => loadData())
+  useRealtime('documents', () => loadData())
+
+  const handleOpenAdd = () => setIsDialogOpen(true)
+
+  const handleSaveModal = async (itemData: Partial<DashboardItem>) => {
+    try {
+      const newItem = {
+        ...itemData,
+        status: 'Extracted (IA)',
+        weight: calculateWeight(itemData),
+        notes: [],
+      } as DashboardItem
+      await createDashboardItem(newItem)
+      toast({
+        title: 'Adicionado ao Brain',
+        description: 'Nova entidade processada e categorizada.',
+      })
+      setIsDialogOpen(false)
+    } catch (e) {
+      toast({ title: 'Erro', description: 'Não foi possível salvar a entidade.' })
+    }
+  }
+
+  const handleInlineEdit = async (id: string, field: keyof DashboardItem, value: any) => {
+    const item = items.find((i) => i.id === id)
+    if (!item) return
+
+    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, [field]: value } : i)))
+
+    try {
+      await updateDashboardItem(id, item.category, { [field]: value })
+      if (field === 'status' && value === 'Validated by Finance') {
+        toast({ title: 'Status Atualizado', description: 'Registro validado pelo financeiro.' })
+      }
+    } catch (e) {
+      loadData()
+      toast({ title: 'Erro', description: 'Falha ao atualizar registro.' })
+    }
+  }
+
+  const handleUpdateRecord = async (id: string, updates: Partial<DashboardItem>) => {
+    const item = items.find((i) => i.id === id)
+    if (!item) return
+
+    try {
+      await updateDashboardItem(id, item.category, updates)
+      toast({ title: 'Atualizado', description: 'Alterações salvas com sucesso.' })
+    } catch (e) {
+      toast({ title: 'Erro', description: 'Erro ao salvar alterações.' })
+    }
   }
 
   const filteredItems = items.filter((item) => {
@@ -177,33 +142,42 @@ export default function Dashboard() {
     return true
   })
 
-  const handleDelete = (id: string) => {
-    setItems((prev) => prev.filter((i) => i.id !== id))
-    toast({ title: 'Removido', description: 'O registro foi removido do sistema.' })
+  const handleDelete = async (id: string) => {
+    const item = items.find((i) => i.id === id)
+    if (!item) return
+    try {
+      await deleteDashboardItem(id, item.category)
+      toast({ title: 'Removido', description: 'O registro foi removido do sistema.' })
+    } catch (e) {
+      toast({ title: 'Erro', description: 'Erro ao remover registro.' })
+    }
   }
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    const mockImport: DashboardItem = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: `Doc Extraído: ${file.name.substring(0, 10)}`,
-      unit: unitFilter !== 'All' ? unitFilter : 'PRN Diagnósticos',
-      category: 'Legal Documentation',
-      docType: 'Internal Document',
-      status: 'Extracted (IA)',
-      weight: 1,
-      dueDate: getRelativeDate(20),
-      cost: 0,
-      notes: [],
+    try {
+      const mockImport: Partial<DashboardItem> = {
+        name: `Doc Extraído: ${file.name.substring(0, 10)}`,
+        unit: unitFilter !== 'All' ? unitFilter : 'PRN Diagnósticos',
+        category: 'Legal Documentation',
+        docType: 'Internal Document',
+        status: 'Extracted (IA)',
+        weight: 1,
+        dueDate: getRelativeDate(20),
+        cost: 0,
+        notes: [],
+      }
+      await createDashboardItem(mockImport)
+      toast({
+        title: 'Extração IA Concluída',
+        description: 'Documento classificado automaticamente na ontologia.',
+        className: 'bg-indigo-50 border-indigo-200 text-indigo-900',
+      })
+    } catch (err) {
+      toast({ title: 'Erro', description: 'Falha na extração de documento.' })
     }
-    setItems((prev) => [...prev, mockImport])
-    toast({
-      title: 'Extração IA Concluída',
-      description: 'Documento classificado automaticamente na ontologia.',
-      className: 'bg-indigo-50 border-indigo-200 text-indigo-900',
-    })
 
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
@@ -216,6 +190,9 @@ export default function Dashboard() {
         ? 'bg-purple-50/40'
         : 'bg-transparent',
   )
+
+  if (loadingData)
+    return <div className="p-8 text-center text-slate-500">Sincronizando The Brain...</div>
 
   return (
     <div className={containerClasses}>
